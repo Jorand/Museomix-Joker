@@ -85,11 +85,12 @@ void loop(void) {
       digitalWrite(REMOTE_LED, LOW);
     }
   }
+  
 
   if (!play2State) {
     buttonRemoteState = digitalRead(REMOTE_BTN);
 
-    if (buttonRemoteState != lastState && buttonRemoteState == LOW && millis() - timer > 500) {
+    if (buttonRemoteState == LOW && millis() - timer > 500) {
       timer = millis();
   
       if (!playState) {
@@ -97,7 +98,6 @@ void loop(void) {
         digitalWrite(REMOTE_LED, HIGH);
         myDFPlayer.playMp3Folder(1);
       }
-      lastState = buttonRemoteState;
     }
   }
 
@@ -106,14 +106,14 @@ void loop(void) {
   if (buttonCardState == LOW) {
     // turn LED on:
     digitalWrite(TCS_LED, HIGH);
-    delay(200);
     readSensor();
   } else {
     // turn LED off:
-    digitalWrite(TCS_LED, LOW);
+    //digitalWrite(TCS_LED, LOW);
     play2State = false;
     if (!playState) {
       myDFPlayer.pause();
+      delay(100);
     }
   }
 
@@ -124,12 +124,28 @@ void loop(void) {
 }
 
 void readSensor() {
-  uint16_t r, g, b, c, colorTemp, lux;
 
-  tcs.getRawData(&r, &g, &b, &c);
-  // colorTemp = tcs.calculateColorTemperature(r, g, b);
-  colorTemp = tcs.calculateColorTemperature_dn40(r, g, b, c);
-  lux = tcs.calculateLux(r, g, b);
+  uint16_t r, g, b, c, colorTemp, lux;
+  int value = 0;
+
+  for (int i = 0; i < 4; i++){
+    tcs.getRawData(&r, &g, &b, &c);
+    // colorTemp = tcs.calculateColorTemperature(r, g, b);
+    colorTemp = tcs.calculateColorTemperature_dn40(r, g, b, c);
+    lux = tcs.calculateLux(r, g, b);
+
+    if (i > 1) {
+      Serial.println(r);
+      value = value + r;
+    }
+
+    // 1ms pause adds more stability between reads.
+    delay(1);
+  }
+
+  value = value / 2;
+  
+  
   /*
   Serial.print("Color Temp: "); Serial.print(colorTemp, DEC); Serial.print(" K - ");
   Serial.print("Lux: "); Serial.print(lux, DEC); Serial.print(" - ");
@@ -138,27 +154,33 @@ void readSensor() {
   Serial.print("B: "); Serial.print(b, DEC); Serial.print(" ");
   Serial.print("C: "); Serial.print(c, DEC); Serial.print(" ");
   Serial.println(" ");
-  */  
+  */ 
 
-  int colorDistance = abs(r - sample);
+   Serial.println(value);
+
+  int colorDistance = value - sample;
 
   if (colorDistance < 0) {
     colorDistance = -colorDistance;
   }
 
-  //Serial.println(colorDistance);
+  Serial.println(colorDistance);
 
   // Check color
   if (colorDistance < 50) {
     // GOOD
     // Play story
     if (!play2State) {
+      digitalWrite(REMOTE_LED, LOW);
+      playState = false;
       myDFPlayer.playMp3Folder(2);
       play2State = true;
     }
   }
   else {
     if (!play2State) {
+      digitalWrite(REMOTE_LED, LOW);
+      playState = false;
       myDFPlayer.playMp3Folder(3);
       play2State = true;
     }
