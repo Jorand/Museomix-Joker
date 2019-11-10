@@ -12,12 +12,13 @@ const int CARD_BTN = 2;
 const int REMOTE_BTN = 4;
 const int REMOTE_LED = 7;
 
-const int sample = 1735;
+const int sample = 973;
 
 int buttonCardState = 0;
 int buttonRemoteState = 0;
 
 static unsigned long timer = millis();
+static unsigned long timerReadDFPlayer = millis();
 bool lastState = true;
 bool playState = false;
 bool play2State = false;
@@ -60,30 +61,43 @@ void setup(void) {
   }
   Serial.println(F("DFPlayer Mini online."));
 
-  myDFPlayer.volume(20);  //Set volume value. From 0 to 30
+  myDFPlayer.volume(30);  //Set volume value. From 0 to 30
   //myDFPlayer.play(1);  //Play the first mp3
+
+  digitalWrite(REMOTE_LED, HIGH);
+  delay(200);
+  digitalWrite(REMOTE_LED, LOW);
+  delay(200);
+  digitalWrite(REMOTE_LED, HIGH);
+  delay(500);
+  digitalWrite(REMOTE_LED, LOW);
 }
 
 void loop(void) {
 
-  // User press button
-  buttonRemoteState = digitalRead(REMOTE_BTN);
-
   //Serial.println(myDFPlayer.readState());
 
-  if (myDFPlayer.readState() != 513) {
-    playState = false;
-    play2State = false;
-    digitalWrite(REMOTE_LED, LOW);
+  if (millis() - timerReadDFPlayer > 500) {
+    timerReadDFPlayer = millis();
+    //Serial.println(myDFPlayer.readState());
+    if (myDFPlayer.readState() != 513) {
+      playState = false;
+      digitalWrite(REMOTE_LED, LOW);
+    }
   }
 
-  if (buttonRemoteState == LOW && millis() - timer > 500) {
-    timer = millis();
+  if (!play2State) {
+    buttonRemoteState = digitalRead(REMOTE_BTN);
 
-    if (!playState && !play2State) {
-      playState = true;
-      digitalWrite(REMOTE_LED, HIGH);
-      myDFPlayer.playMp3Folder(1);
+    if (buttonRemoteState != lastState && buttonRemoteState == LOW && millis() - timer > 500) {
+      timer = millis();
+  
+      if (!playState) {
+        playState = true;
+        digitalWrite(REMOTE_LED, HIGH);
+        myDFPlayer.playMp3Folder(1);
+      }
+      lastState = buttonRemoteState;
     }
   }
 
@@ -92,15 +106,19 @@ void loop(void) {
   if (buttonCardState == LOW) {
     // turn LED on:
     digitalWrite(TCS_LED, HIGH);
+    delay(200);
     readSensor();
   } else {
     // turn LED off:
     digitalWrite(TCS_LED, LOW);
     play2State = false;
+    if (!playState) {
+      myDFPlayer.pause();
+    }
   }
 
   if (!playState && !play2State) {
-    myDFPlayer.pause();
+    //myDFPlayer.pause();
   }
 
 }
@@ -112,7 +130,7 @@ void readSensor() {
   // colorTemp = tcs.calculateColorTemperature(r, g, b);
   colorTemp = tcs.calculateColorTemperature_dn40(r, g, b, c);
   lux = tcs.calculateLux(r, g, b);
-
+  /*
   Serial.print("Color Temp: "); Serial.print(colorTemp, DEC); Serial.print(" K - ");
   Serial.print("Lux: "); Serial.print(lux, DEC); Serial.print(" - ");
   Serial.print("R: "); Serial.print(r, DEC); Serial.print(" ");
@@ -120,18 +138,29 @@ void readSensor() {
   Serial.print("B: "); Serial.print(b, DEC); Serial.print(" ");
   Serial.print("C: "); Serial.print(c, DEC); Serial.print(" ");
   Serial.println(" ");
+  */  
 
-  int colorDistance = sqrt(pow(r - sample, 2));
+  int colorDistance = abs(r - sample);
 
-  Serial.println(colorDistance);
+  if (colorDistance < 0) {
+    colorDistance = -colorDistance;
+  }
+
+  //Serial.println(colorDistance);
 
   // Check color
-  //if (colorDistance < 50) {
+  if (colorDistance < 50) {
     // GOOD
     // Play story
     if (!play2State) {
-      myDFPlayer.playMp3Folder(1);
+      myDFPlayer.playMp3Folder(2);
       play2State = true;
     }
- // }
+  }
+  else {
+    if (!play2State) {
+      myDFPlayer.playMp3Folder(3);
+      play2State = true;
+    }
+  }
 }
