@@ -25,7 +25,8 @@ bool play2State = false;
 
 /* Example code for the Adafruit TCS34725 breakout library */
 
-/* Connect SCL    to analog 5
+/* Connect LED    to analog A0
+   Connect SCL    to analog 5
    Connect SDA    to analog 4
    Connect VDD    to 3.3V DC
    Connect GROUND to common ground */
@@ -85,14 +86,14 @@ void loop(void) {
       digitalWrite(REMOTE_LED, LOW);
     }
   }
-  
+
 
   if (!play2State) {
     buttonRemoteState = digitalRead(REMOTE_BTN);
 
     if (buttonRemoteState == LOW && millis() - timer > 500) {
       timer = millis();
-  
+
       if (!playState) {
         playState = true;
         digitalWrite(REMOTE_LED, HIGH);
@@ -144,8 +145,8 @@ void readSensor() {
   }
 
   value = value / 2;
-  
-  
+
+
   /*
   Serial.print("Color Temp: "); Serial.print(colorTemp, DEC); Serial.print(" K - ");
   Serial.print("Lux: "); Serial.print(lux, DEC); Serial.print(" - ");
@@ -154,7 +155,7 @@ void readSensor() {
   Serial.print("B: "); Serial.print(b, DEC); Serial.print(" ");
   Serial.print("C: "); Serial.print(c, DEC); Serial.print(" ");
   Serial.println(" ");
-  */ 
+  */
 
    Serial.println(value);
 
